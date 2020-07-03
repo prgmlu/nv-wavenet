@@ -24,7 +24,9 @@
 #  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # 
 # *****************************************************************************
+import sys
 import argparse
+import datetime
 import json
 import os
 import time
@@ -39,6 +41,8 @@ from torch.utils.data import DataLoader
 from wavenet import WaveNet
 from mel2samp_onehot import Mel2SampOnehot
 from utils import to_gpu
+
+import tensorflow as tf
 
 class CrossEntropyLoss(torch.nn.Module):
     def __init__(self):
@@ -140,11 +144,14 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
             if num_gpus > 1:
                 reduced_loss = reduce_tensor(loss.data, num_gpus)[0]
             else:
-                reduced_loss = loss.data[0]
+                reduced_loss = loss.data
             loss.backward()
             optimizer.step()
 
+            with train_summary_writer.as_default():
+                tf.summary.scalar('loss', reduced_loss.cpu(), step=iteration)
             print("{}:\t{:.9f}".format(iteration, reduced_loss))
+            sys.stdout.flush()
 
             if (iteration % iters_per_checkpoint == 0):
                 if rank == 0:
@@ -176,7 +183,12 @@ if __name__ == "__main__":
     dist_config = config["dist_config"]
     global wavenet_config 
     wavenet_config = config["wavenet_config"]
-   
+
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    train_log_dir = 'logs/wavenet/' + current_time + '/train'
+    #test_log_dir = 'logs/gradient_tape/' + current_time + '/test'
+    train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+    #test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
     num_gpus = torch.cuda.device_count()
     if num_gpus > 1:
