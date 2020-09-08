@@ -30,6 +30,17 @@ import numpy as np
 from scipy.io.wavfile import read
 MAX_WAV_VALUE = 32768.0
 
+def set_config(N_LAYERS,EPOCHS,LEARNING_RATE,BATCH_SIZE,ITERS_PER_CHECKPOINT):
+    with open("config.json", "r") as jsonFile:
+        config_dict = json.load(jsonFile)
+    config_dict['wavenet_config']['n_layer']    = N_LAYERS
+    config_dict['train_config']['epochs']       = EPOCHS
+    config_dict['train_config']['learning_rate']= LEARNING_RATE
+    config_dict['train_config']['batch_size'] = BATCH_SIZE
+    config_dict['train_config']['iters_per_checkpoint'] = ITERS_PER_CHECKPOINT
+    with open("config.json", "w") as jsonFile:
+        json.dump(config_dict, jsonFile, indent=2)
+
 def load_wav_to_torch(full_path):
     """
     Loads wavdata into torch array
