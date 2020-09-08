@@ -16,7 +16,7 @@
         "filter_length": 800,
         "hop_length": 200,
         "win_length": 800,
-        "sampling_rate": 22050
+        "sampling_rate": 16000
     },
 
     "dist_config": {
