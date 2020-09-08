@@ -24,13 +24,14 @@
 #  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # 
 # *****************************************************************************
-import sys
+# import sys
 import argparse
 import datetime
 import json
 import os
 import time
 import torch
+from torch.utils.tensorboard import SummaryWriter
 
 #=====START: ADDED FOR DISTRIBUTED======
 from distributed import init_distributed, apply_gradient_allreduce, reduce_tensor
@@ -42,7 +43,7 @@ from wavenet import WaveNet
 from mel2samp_onehot import Mel2SampOnehot
 from utils import to_gpu
 
-import tensorflow as tf
+# import tensorflow as tf
 
 class CrossEntropyLoss(torch.nn.Module):
     def __init__(self):
@@ -130,6 +131,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
     model.train()
     epoch_offset = max(0, int(iteration / len(train_loader)))
     # ================ MAIN TRAINNIG LOOP! ===================
+    writer = SummaryWriter()
     for epoch in range(epoch_offset, epochs):
         print("Epoch: {}".format(epoch))
         for i, batch in enumerate(train_loader):
@@ -145,13 +147,14 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
                 reduced_loss = reduce_tensor(loss.data, num_gpus)[0]
             else:
                 reduced_loss = loss.data
+            writer.add_scalar("Loss/train", reduced_loss, epoch)
             loss.backward()
             optimizer.step()
 
-            with train_summary_writer.as_default():
-                tf.summary.scalar('loss', reduced_loss.cpu(), step=iteration)
+            # with train_summary_writer.as_default():
+            #     tf.summary.scalar('loss', reduced_loss.cpu(), step=iteration)
             print("{}:\t{:.9f}".format(iteration, reduced_loss))
-            sys.stdout.flush()
+            # sys.stdout.flush()
 
             if (iteration % iters_per_checkpoint == 0):
                 if rank == 0:
@@ -161,6 +164,8 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
                                     checkpoint_path)
                      
             iteration += 1
+        writer.flush()
+    writer.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -184,10 +189,10 @@ if __name__ == "__main__":
     global wavenet_config 
     wavenet_config = config["wavenet_config"]
 
-    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = 'logs/wavenet/' + current_time + '/train'
+    # current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    # train_log_dir = 'logs/wavenet/' + current_time + '/train'
     #test_log_dir = 'logs/gradient_tape/' + current_time + '/test'
-    train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+    # train_summary_writer = tf.summary.create_file_writer(train_log_dir)
     #test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
     num_gpus = torch.cuda.device_count()
