@@ -28,6 +28,7 @@ import os
 import torch
 import numpy as np
 from scipy.io.wavfile import read
+import json
 MAX_WAV_VALUE = 32768.0
 
 def set_config(N_LAYERS,EPOCHS,LEARNING_RATE,BATCH_SIZE,ITERS_PER_CHECKPOINT):
