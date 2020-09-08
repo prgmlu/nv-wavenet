@@ -34,7 +34,7 @@ MAX_WAV_VALUE = 32768.0
 def set_config(N_LAYERS,EPOCHS,LEARNING_RATE,BATCH_SIZE,ITERS_PER_CHECKPOINT):
     with open("config.json", "r") as jsonFile:
         config_dict = json.load(jsonFile)
-    config_dict['wavenet_config']['n_layer']    = N_LAYERS
+    config_dict['wavenet_config']['n_layers']    = N_LAYERS
     config_dict['train_config']['epochs']       = EPOCHS
     config_dict['train_config']['learning_rate']= LEARNING_RATE
     config_dict['train_config']['batch_size'] = BATCH_SIZE
